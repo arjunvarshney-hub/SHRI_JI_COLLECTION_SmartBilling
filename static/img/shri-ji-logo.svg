@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Shri Ji Collection premium logo">
+<defs>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4df9d"/><stop offset=".55" stop-color="#c9a55a"/><stop offset="1" stop-color="#f6e8b9"/></linearGradient>
+ <linearGradient id="navy" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#102f55"/><stop offset="1" stop-color="#07182d"/></linearGradient>
+</defs>
+<circle cx="80" cy="80" r="74" fill="url(#navy)" stroke="url(#gold)" stroke-width="5"/>
+<circle cx="80" cy="80" r="61" fill="none" stroke="#ffffff" stroke-opacity=".22" stroke-width="1.5"/>
+<path d="M45 61 Q80 33 115 61" fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/>
+<path d="M49 65 Q80 48 111 65" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="2" stroke-linecap="round"/>
+<text x="80" y="94" text-anchor="middle" font-family="Georgia,serif" font-size="37" font-weight="700" fill="url(#gold)">SJ</text>
+<path d="M55 106 Q80 119 105 106" fill="none" stroke="url(#gold)" stroke-width="3" stroke-linecap="round"/>
+<text x="80" y="129" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700" letter-spacing="2" fill="#fff">COLLECTION</text>
+</svg>

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head"><div><span class="eyebrow">REPORTS</span><h2>Sales Reports</h2><p>Compare today, this month, this year, or all saved data.</p></div></section>
+<section class="report-tabs"><button class="tab active" onclick="switchReport('today',this)">Today</button><button class="tab" onclick="switchReport('month',this)">Month</button><button class="tab" onclick="switchReport('year',this)">Year</button><button class="tab" onclick="switchReport('all',this)">All</button></section>
+<section class="stats-grid compact report-stats"><div class="stat-card"><span>Bills</span><strong id="rBills">0</strong></div><div class="stat-card accent"><span>Sales</span><strong id="rSales">₹0.00</strong></div><div class="stat-card"><span>Discount</span><strong id="rDiscount">₹0.00</strong></div><div class="stat-card"><span>Subtotal</span><strong id="rSubtotal">₹0.00</strong></div></section>
+<section class="two-col"><div class="panel"><div class="panel-head"><h3>Category sales</h3><span>Quantity + revenue</span></div><div id="catSales"></div></div><div class="panel"><div class="panel-head"><h3>Daily breakdown</h3><span>Saved bills</span></div><div id="daily"></div></div></section>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadReport(period='today'){const r=await api('/api/report?period='+period);$('rBills').textContent=r.summary.bills;$('rSales').textContent=money(r.summary.final);$('rDiscount').textContent=money(r.summary.discount);$('rSubtotal').textContent=money(r.summary.subtotal);$('daily').innerHTML=r.daily.length?'<div class="bar-list">'+r.daily.map(x=>`<div><span>${esc(x.day)}</span><b>${x.bills} bills • ${money(x.sales)}</b></div>`).join('')+'</div>':'<div class="empty">No data for this period.</div>';const c=await api('/api/category-sales');$('catSales').innerHTML=c.length?'<div class="bar-list">'+c.slice(0,12).map(x=>`<div><span>${esc(x.category)}</span><b>${x.qty} sold • ${money(x.revenue)}</b></div>`).join('')+'</div>':'<div class="empty">No sales yet.</div>'}
+function switchReport(period,el){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));el.classList.add('active');loadReport(period)}
+loadReport();
+</script>
+{% endblock %}

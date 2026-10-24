@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head">
+  <div><span class="eyebrow">BILLING</span><h2>New Bill</h2><p>Fast entry, automatic totals, 20% discount and stock update.</p></div>
+  <div class="bill-badge">Bill No: <b id="billNo">Loading...</b></div>
+</section>
+<section class="billing-layout">
+  <div>
+    <div class="panel">
+      <div class="panel-head"><h3>Customer</h3><span>Optional</span></div>
+      <div class="form-grid two">
+        <label>Customer Name<input id="customerName" placeholder="Customer ka naam"></label>
+        <label>Mobile<input id="customerMobile" inputmode="numeric" maxlength="10" placeholder="10-digit mobile"><div id="customerHint" class="helper"></div></label>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Add Item</h3><span>Product + shortcut supported</span></div>
+      <div class="form-grid three">
+        <label>Barcode <input id="barcode" inputmode="numeric" autocomplete="off" placeholder="Scan barcode & press Enter"></label>
+        <label>Item / सामान<input id="item" list="productList" placeholder="p, m, f, a, g, pl..."><datalist id="productList"></datalist></label>
+        <label>Qty<input id="qty" type="number" min="1" value="1"></label>
+      </div>
+      <div class="helper" style="margin-top:-4px">📷 USB/Bluetooth barcode scanner supported. Scan the product barcode here; the matching item and price will be selected automatically.</div>
+      <div class="form-grid two" style="margin-top:10px">
+        <label>Price (₹)<input id="price" type="number" min="0" step="0.01" placeholder="0"></label>
+        <div style="display:flex;align-items:end"><button type="button" class="btn light full" id="barcodeFocusBtn">▣ Focus Barcode Scanner</button></div>
+      </div>
+      <div class="quick-wrap" id="quickButtons"></div>
+      <p class="helper"><b>Shortcuts:</b> p = Poshak • m = Mala • f = Fall • a = Astar • g = Gown • k = Kurti • pl = Plazo.</p>
+      <button class="btn primary full" id="addBtn">＋ Add Item</button>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Current Bill</h3><span id="itemCount">0 items</span></div>
+      <div id="items"><div class="empty">अभी कोई item नहीं जोड़ा गया</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="panel bill-summary">
+      <div class="panel-head"><h3>Bill Summary</h3><span>Editable discount</span></div>
+      <div class="summary-row"><span>Subtotal</span><b id="subtotal">₹0.00</b></div>
+      <div class="summary-row discount-edit-row"><span>Discount <input id="discountRate" type="number" min="0" max="100" step="0.01" value="20" aria-label="Discount percentage"> %</span><b id="discount">- ₹0.00</b></div>
+      <div class="summary-final"><span>FINAL AMOUNT</span><strong id="final">₹0.00</strong></div>
+      <label class="payment-label">Payment<select id="payment"><option>Cash</option><option>UPI</option><option>Card</option><option>Udhaar</option></select></label>
+      <div class="stack-actions">
+        <button class="btn gold" id="saveWa">💾 Save + WhatsApp</button>
+        <button class="btn" id="printBtn">🖨️ Print / PDF</button>
+        <button class="btn light" id="saveBtn">💾 Save Bill</button>
+        <button class="btn danger" id="newBtn">＋ New Bill</button>
+      </div>
+      <div class="tip">Matching inventory stock is reduced automatically when the bill is saved.</div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+let items=[], products=[];
+function renderItems(){
+  $('itemCount').textContent=items.length+' item'+(items.length===1?'':'s');
+  $('items').innerHTML=items.length?items.map((x,i)=>`<div class="bill-line"><div><small>${esc(x.name)}</small><b>${moneyNum(x.price)} × ${x.qty}</b></div><div class="line-right"><b>${money(x.price*x.qty)}</b><button class="remove-btn" onclick="removeItem(${i})">Remove</button></div></div>`).join(''):'<div class="empty">अभी कोई item नहीं जोड़ा गया</div>';
+  const sub=items.reduce((s,x)=>s+x.price*x.qty,0),rate=Math.min(100,Math.max(0,Number($('discountRate').value||0))),disc=sub*(rate/100),fin=sub-disc;
+  $('subtotal').textContent=money(sub);$('discount').textContent='- '+money(disc);$('final').textContent=money(fin);
+}
+function selectProduct(p){$('item').value=p.name;if(Number(p.price)>0)$('price').value=p.price;$('price').focus()}
+async function findByBarcode(code){
+  const value=String(code||'').trim();
+  if(!value) return;
+  try{
+    const found=await api('/api/products?barcode='+encodeURIComponent(value));
+    if(!found.length){alert('Barcode not found. Inventory mein is product ka barcode add karo.');$('barcode').select();return;}
+    const p=found[0];
+    selectProduct(p);
+    $('barcode').value='';
+    $('qty').focus();
+  }catch(e){alert('Barcode lookup failed.');}
+}
+async function initBilling(){
+  $('billNo').textContent=(await api('/api/bill-next')).bill_no;
+  products=await api('/api/products');
+  $('productList').innerHTML=products.map(p=>`<option value="${esc(p.name)}">${esc(p.shortcut)} — ${esc(p.category)}</option>`).join('');
+  $('quickButtons').innerHTML=products.slice(0,18).map(p=>`<button type="button" class="quick" onclick='selectProduct(${JSON.stringify(p)})'>${esc(p.name)}</button>`).join('');
+  $('item').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const q=e.target.value.trim().toLowerCase();const p=products.find(x=>x.shortcut===q)||products.find(x=>x.name.toLowerCase()===q);if(p)selectProduct(p);else $('price').focus()}})
+}
+$('barcode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findByBarcode(e.target.value)}});$('barcodeFocusBtn').onclick=()=>{$('barcode').focus();$('barcode').select()};
+$('customerMobile').addEventListener('blur',async()=>{const q=$('customerMobile').value.trim();if(!q)return;try{const cs=await api('/api/customers?q='+encodeURIComponent(q));if(cs.length){$('customerName').value=cs[0].name;$('customerHint').textContent='Existing customer • Outstanding: '+money(cs[0].outstanding)}else $('customerHint').textContent='New customer';}catch(e){}});
+$('discountRate').addEventListener('input',renderItems); $('discountRate').addEventListener('change',renderItems);
+$('addBtn').onclick=()=>{const name=$('item').value.trim(),price=Number($('price').value),qty=Math.floor(Number($('qty').value||1));if(!name||!Number.isFinite(price)||price<=0||qty<1){alert('Item, price aur quantity sahi bharo.');return}items.push({name,price,qty});$('item').value='';$('price').value='';$('qty').value=1;renderItems();$('item').focus()}
+function removeItem(i){items.splice(i,1);renderItems()}
+$('saveBtn').onclick=()=>saveBill(false);$('saveWa').onclick=()=>saveBill(true);$('printBtn').onclick=()=>window.print();$('newBtn').onclick=()=>{if(items.length&&!confirm('Current bill clear karke new bill banana hai?'))return;location.reload()}
+async function saveBill(toWhatsapp){
+  if(!items.length){alert('Pehle items add karo.');return}
+  const discountRate=Math.min(100,Math.max(0,Number($('discountRate').value||0))); const payload={customer_name:$('customerName').value.trim(),customer_mobile:$('customerMobile').value.trim(),payment:$('payment').value,discount_rate:discountRate,items};
+  const bill=await api('/api/bills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});alert('Bill save ho gaya: '+bill.bill_no);
+  if(toWhatsapp){let mobile=(bill.customer_mobile||'').replace(/\D/g,'');if(mobile.length===10)mobile='91'+mobile;if(mobile&&mobile.length!==12){alert('Customer ka 10-digit mobile number sahi bharo.');return}const lines=bill.items.map(x=>`${x.name} × ${x.qty} — ${money(x.price*x.qty)}`).join('\n');const txt=`*SHRI JI ENTERPRISES*\nBill No: ${bill.bill_no}\nCustomer: ${bill.customer_name||'-'}${bill.customer_mobile?'\nMobile: '+bill.customer_mobile:''}\n\n${lines}\n\nSubtotal: ${money(bill.subtotal)}\nDiscount ${Number(bill.discount_rate ?? 20)}%: ${money(bill.discount)}\n*FINAL AMOUNT: ${money(bill.final_amount)}*\nPayment: ${bill.payment}\n\nThank you for shopping with us 🙏`;location.href=mobile?'https://wa.me/'+mobile+'?text='+encodeURIComponent(txt):'https://wa.me/?text='+encodeURIComponent(txt)}
+  else location.reload();
+}
+renderItems();initBilling();
+</script>
+{% endblock %}

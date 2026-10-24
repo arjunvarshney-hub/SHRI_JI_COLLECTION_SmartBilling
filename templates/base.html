@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ store }} — Smart Billing</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <a class="brand-logo" href="/" aria-label="SHRI JI ENTERPRISES home">
+      <img src="{{ url_for('static', filename='img/shri-ji-logo.svg') }}" alt="Shri Ji Collection logo">
+    </a>
+    <div><h1>{{ store }}</h1><p>Billing • Inventory • Sales • Alerts</p></div>
+  </div>
+  <div class="top-actions">
+    <a class="top-link" href="/alerts">🔔 <span id="topAlertCount">0</span></a>
+    <button class="mobile-menu" onclick="toggleSidebar()">☰</button>
+  </div>
+</header>
+<div class="app-shell">
+  <aside id="sidebar" class="sidebar">
+    <div class="shop-mini">
+      <div class="mini-title">{{ store }}</div>
+      <div class="mini-sub">{{ address }}</div>
+    </div>
+    <nav>
+      <a href="/" class="{% if request.path=='/' %}active{% endif %}">🏠 <span>Dashboard</span></a>
+      <a href="/billing" class="{% if request.path=='/billing' %}active{% endif %}">🧾 <span>New Bill</span></a>
+      <a href="/inventory" class="{% if request.path in ['/inventory','/products'] %}active{% endif %}">📦 <span>Inventory</span></a>
+      <a href="/sales" class="{% if request.path=='/sales' %}active{% endif %}">💰 <span>Sales</span></a>
+      <a href="/alerts" class="{% if request.path=='/alerts' %}active{% endif %}">🔔 <span>Alerts</span><em id="navAlertCount">0</em></a>
+      <a href="/locations" class="{% if request.path=='/locations' %}active{% endif %}">📍 <span>Locations</span></a>
+      <a href="/reports" class="{% if request.path=='/reports' %}active{% endif %}">📊 <span>Reports</span></a>
+      <a href="/ai" class="{% if request.path=='/ai' %}active{% endif %}">🤖 <span>AI Assistant</span></a>
+      <a href="/settings" class="{% if request.path=='/settings' %}active{% endif %}">⚙️ <span>Settings</span></a>
+    </nav>
+    <div class="sidebar-note">
+      <b>Smart flow</b>
+      <p>Bill → stock update → alert → reports. Everything stays in one place.</p>
+    </div>
+  </aside>
+  <main class="main">{% block content %}{% endblock %}</main>
+</div>
+
+<!-- Global AI assistant launcher: available on every page -->
+<a class="ai-fab" href="/ai" aria-label="Open AI Assistant" title="Open AI Assistant">
+  <span class="ai-fab-icon">✦</span>
+  <span class="ai-fab-label">AI Assistant</span>
+</a>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script>
+(async function(){try{const a=await api('/api/alerts');const n=a.length;document.getElementById('topAlertCount').textContent=n;document.getElementById('navAlertCount').textContent=n;}catch(e){}})();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

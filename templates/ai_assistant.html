@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head"><div><span class="eyebrow">SMART AI</span><h2>SHRI JI Business Assistant</h2><p>Ask about sales, inventory, products, categories and business performance. The assistant only reads your shop data.</p></div></section>
+
+<section class="ai-grid">
+  <div class="panel ai-chat-panel">
+    <div class="panel-head"><h3>🤖 Ai assistant</h3><span>Business-aware • Read-only</span></div>
+    <div id="chat" class="ai-chat">
+      <div class="ai-message bot">Welcome. I can help you understand your shop — sales, inventory, top products, categories, restocking and business trends.</div>
+    </div>
+    <div class="ai-input-row">
+      <input id="aiInput" placeholder="Ask: Give me a business analysis" autocomplete="off">
+      <button class="btn primary" id="askBtn" onclick="askAI()">Ask AI</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h3>Business Questions</h3><span>Quick actions</span></div>
+    <div class="quick-ai">
+      <button onclick="askQuick('Give me a business analysis')">📊 Business analysis</button>
+      <button onclick="askQuick('How were sales this week?')">📈 Weekly sales</button>
+      <button onclick="askQuick('Which category sells the most?')">🏷️ Category performance</button>
+      <button onclick="askQuick('What should I restock?')">📦 Restock advice</button>
+      <button onclick="askQuick('What are my top-selling products?')">🔥 Top-selling products</button>
+      <button onclick="askQuick('Show me expiry alerts')">⏳ Expiry alerts</button>
+      <button onclick="askQuick('Give me an inventory summary')">📋 Inventory summary</button>
+    </div>
+    <div class="ai-note">
+      <b>What this AI can do</b>
+      <p>Analyze recorded sales, inventory, categories, alerts and product movement. It can also give practical business observations based on the available data.</p>
+      <p><strong>It will not invent numbers or modify your bills, stock or products.</strong></p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+function addMessage(text, who){const d=document.createElement('div');d.className='ai-message '+who;d.textContent=text;$('chat').appendChild(d);$('chat').scrollTop=$('chat').scrollHeight;}
+async function askAI(){const input=$('aiInput');const q=input.value.trim();if(!q)return;input.value='';addMessage(q,'user');$('askBtn').disabled=true;$('askBtn').textContent='Thinking...';try{const r=await api('/api/ai/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:q})});addMessage(r.answer||r.error||'No answer.','bot');}catch(e){addMessage('AI request failed. Please check the server.','bot');}finally{$('askBtn').disabled=false;$('askBtn').textContent='Ask AI';input.focus();}}
+function askQuick(q){$('aiInput').value=q;askAI();}
+$('aiInput').addEventListener('keydown',e=>{if(e.key==='Enter')askAI();});
+</script>
+{% endblock %}

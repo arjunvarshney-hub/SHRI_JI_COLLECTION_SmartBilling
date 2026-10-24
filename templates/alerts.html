@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head"><div><span class="eyebrow">ALERTS</span><h2>Things that need attention</h2><p>Low stock, expired products and products that are about to expire.</p></div><button class="btn light" onclick="loadAlerts()">↻ Refresh</button></section>
+<section class="stats-grid compact"><div class="stat-card danger"><span>Total Alerts</span><strong id="aTotal">0</strong></div><div class="stat-card"><span>High Priority</span><strong id="aHigh">0</strong></div><div class="stat-card accent"><span>Low Stock</span><strong id="aLow">0</strong></div><div class="stat-card"><span>Expiry Related</span><strong id="aExpiry">0</strong></div></section>
+<section class="panel"><div class="panel-head"><h3>Active alerts</h3><span id="alertHint">Loading...</span></div><div id="alertsList" class="alert-grid"></div></section>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadAlerts(){const a=await api('/api/alerts');$('aTotal').textContent=a.length;$('aHigh').textContent=a.filter(x=>x.priority==='High').length;$('aLow').textContent=a.filter(x=>x.type==='low_stock').length;$('aExpiry').textContent=a.filter(x=>x.type==='expiry'||x.type==='expired').length;$('alertHint').textContent=a.length?a.length+' item(s) need attention':'All clear';$('alertsList').innerHTML=a.length?a.map(x=>`<div class="alert-card ${x.priority==='High'?'alert-high':'alert-medium'}"><div class="alert-icon">${x.type==='low_stock'?'📦':x.type==='expired'?'⛔':'⏳'}</div><div><div class="alert-title">${esc(x.title)}</div><div class="alert-message">${esc(x.message)}</div><div class="alert-meta">Location: ${esc(x.location_name)} • <span class="pill ${x.priority==='High'?'red':'amber'}">${esc(x.priority)}</span></div></div><a class="btn light small-btn" href="/inventory">Fix</a></div>`).join(''):'<div class="empty">No active alerts. Nice.</div>'}
+loadAlerts();
+</script>
+{% endblock %}

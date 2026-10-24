@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head">
+  <div><span class="eyebrow">DASHBOARD</span><h2>Good to go? Here's your shop snapshot.</h2><p>Sales, stock and alerts without opening five registers.</p></div>
+  <a class="btn primary" href="/billing">＋ New Bill</a>
+</section>
+<section class="stats-grid">
+  <div class="stat-card"><span>Today's Bills</span><strong id="todayBills">0</strong><small>saved today</small></div>
+  <div class="stat-card accent"><span>Today's Sales</span><strong id="todaySales">₹0.00</strong><small>after 20% discount</small></div>
+  <div class="stat-card"><span>Inventory Items</span><strong id="productCount">0</strong><small>catalog products</small></div>
+  <div class="stat-card danger"><span>Alerts</span><strong id="alertCount">0</strong><small>need attention</small></div>
+</section>
+<section class="chart-grid">
+  <div class="panel chart-panel">
+    <div class="panel-head"><h3>Sales — last 7 days</h3><span>Daily revenue</span></div>
+    <div id="salesChart" class="sales-chart"></div>
+  </div>
+  <div class="panel chart-panel">
+    <div class="panel-head"><h3>Payment mix</h3><span>Bill count</span></div>
+    <div id="paymentChart" class="payment-chart"></div>
+  </div>
+</section>
+<section class="panel chart-panel">
+  <div class="panel-head"><h3>Top-selling products</h3><span>Today's quantity sold</span></div>
+  <div id="productChart" class="product-chart"></div>
+</section>
+<section class="two-col">
+  <div class="panel">
+    <div class="panel-head"><h3>Quick actions</h3><span>One click away</span></div>
+    <div class="quick-grid">
+      <a href="/billing">🧾<b>Create Bill</b><small>Start a new sale</small></a>
+      <a href="/inventory">📦<b>Manage Inventory</b><small>Products & stock</small></a>
+      <a href="/sales">💰<b>Sales</b><small>Old bills & customer records</small></a>
+      <a href="/alerts">🔔<b>Check Alerts</b><small>Low stock & expiry</small></a>
+      <a href="/locations">📍<b>Locations</b><small>Store / stock locations</small></a>
+      <a href="/reports">📊<b>Reports</b><small>Daily / monthly data</small></a>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h3>Shop details</h3><span>Current setup</span></div>
+    <div class="detail-box"><b>{{ address }}</b><span>Contact: {{ contacts }}</span><span>Current billing discount: 20%</span><span>Locations: <b id="locationCount">0</b></span></div>
+  </div>
+</section>
+<section class="two-col">
+  <div class="panel">
+    <div class="panel-head"><h3>Priority alerts</h3><a href="/alerts">See all →</a></div>
+    <div id="priorityAlerts" class="stack-list"><div class="empty">Loading...</div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h3>Today's best-selling items</h3><span>Qty sold</span></div>
+    <div id="topProducts" class="stack-list"><div class="empty">Loading...</div></div>
+  </div>
+</section>
+<section class="panel">
+  <div class="panel-head"><h3>Latest sales</h3><a href="/sales">See all →</a></div>
+  <div id="latestBills" class="table-wrap"><div class="empty">Loading...</div></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadDashboard(){
+  const s=await api('/api/summary');
+  $('todayBills').textContent=s.today_bills;
+  $('todaySales').textContent=money(s.today_sales);
+  $('productCount').textContent=s.products;
+  $('alertCount').textContent=s.alerts;
+  $('locationCount').textContent=s.locations;
+  const a=await api('/api/alerts');
+  $('priorityAlerts').innerHTML=a.length?a.slice(0,5).map(x=>`<div class="alert-row ${x.priority==='High'?'high':'medium'}"><div><b>${esc(x.title)}</b><small>${esc(x.message)}</small></div><span class="pill ${x.priority==='High'?'red':'amber'}">${esc(x.priority)}</span></div>`).join(''):'<div class="empty">No active alerts. Nice.</div>';
+  $('topProducts').innerHTML=s.top_products.length?s.top_products.map(x=>`<div class="stat-line"><span>${esc(x.name)}</span><b>${x.qty}</b></div>`).join(''):'<div class="empty">No sales yet today.</div>';
+  renderSalesChart(s.sales_trend||[]);
+  renderPaymentChart(s.payment_mix||[]);
+  renderProductChart(s.top_products||[]);
+  const box=$('latestBills'), bills=s.recent_bills||[];
+  box.innerHTML=bills.length?'<table><thead><tr><th>Bill</th><th>Customer</th><th>Date</th><th>Payment</th><th>Total</th></tr></thead><tbody>'+bills.map(b=>`<tr><td><b>${esc(b.bill_no)}</b></td><td>${esc(b.customer_name||'-')}</td><td>${esc(b.created_at)}</td><td>${esc(b.payment)}</td><td><b>${money(b.final_amount)}</b></td></tr>`).join('')+'</tbody></table>':'<div class="empty">No saved bills yet.</div>';
+}
+function renderSalesChart(rows){
+  const box=$('salesChart'); if(!rows.length){box.innerHTML='<div class="empty">No sales data yet.</div>';return;}
+  const max=Math.max(...rows.map(x=>Number(x.sales)),1);
+  box.innerHTML=rows.map(x=>{const h=Math.max(4,Math.round(Number(x.sales)/max*150)); const label=new Date(x.date+'T00:00:00').toLocaleDateString(undefined,{weekday:'short'}); return `<div class="chart-bar-wrap"><div class="chart-value">${money(x.sales)}</div><div class="chart-bar" style="height:${h}px"></div><span>${label}</span></div>`;}).join('');
+}
+function renderPaymentChart(rows){
+  const box=$('paymentChart'); if(!rows.length){box.innerHTML='<div class="empty">No payment data yet.</div>';return;}
+  const total=rows.reduce((a,x)=>a+Number(x.count||0),0)||1;
+  let start=0; const stops=rows.map(x=>{const pct=Number(x.count||0)/total*100; const end=start+pct; const r=`${start.toFixed(2)}% ${end.toFixed(2)}%`; start=end; return r;});
+  const labels=rows.map((x,i)=>`<div class="legend-row"><span><i class="legend-dot dot-${i%5}"></i>${esc(x.payment||'Unknown')}</span><b>${x.count}</b></div>`).join('');
+  box.innerHTML=`<div class="donut" style="background:conic-gradient(${rows.map((x,i)=>`var(--chart-${i%5}) ${stops[i]}`).join(',')})"><div class="donut-hole"><b>${total}</b><span>bills</span></div></div><div class="legend">${labels}</div>`;
+}
+function renderProductChart(rows){
+  const box=$('productChart'); if(!rows.length){box.innerHTML='<div class="empty">No product sales yet today.</div>';return;}
+  const max=Math.max(...rows.map(x=>Number(x.qty)),1);
+  box.innerHTML=rows.map(x=>`<div class="hbar-row"><span title="${esc(x.name)}">${esc(x.name)}</span><div class="hbar-track"><div class="hbar" style="width:${Math.max(4,Number(x.qty)/max*100)}%"></div></div><b>${x.qty}</b></div>`).join('');
+}
+loadDashboard();
+</script>
+{% endblock %}

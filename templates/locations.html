@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head"><div><span class="eyebrow">LOCATIONS</span><h2>Shop & Stock Locations</h2><p>Keep products organized by shop, section or storage location.</p></div><button class="btn primary" onclick="openLocationModal()">＋ Add Location</button></section>
+<section id="locationCards" class="location-grid"><div class="empty">Loading...</div></section>
+<section class="panel">
+  <div class="panel-head"><h3>Stock Transfer</h3><span>Move stock between locations</span></div>
+  <div class="form-grid four">
+    <label>Product<select id="transferProduct"></select></label>
+    <label>From<select id="transferFrom"></select></label>
+    <label>To<select id="transferTo"></select></label>
+    <label>Quantity<input id="transferQty" type="number" min="1" value="1"></label>
+  </div>
+  <button class="btn primary" onclick="transferStock()">↔ Transfer Stock</button>
+  <p class="helper">Existing stock is preserved; transfer only changes its location allocation.</p>
+</section>
+<div id="locationModal" class="modal hidden"><div class="modal-card"><div class="panel-head"><h3>Add Location</h3><button class="close" onclick="$('locationModal').classList.add('hidden')">×</button></div><div class="form-grid"><label>Location Name<input id="lname" placeholder="Main Shop / Store Room"></label><label>Address / Note<input id="laddress" placeholder="Optional"></label></div><button class="btn primary full" onclick="saveLocation()">Save Location</button></div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadLocations(){const l=await api('/api/locations');const ps=await api('/api/products');$('transferProduct').innerHTML=ps.map(p=>`<option value="${p.id}">${esc(p.name)} • ${p.stock} total</option>`).join('');$('transferFrom').innerHTML=l.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');$('transferTo').innerHTML=l.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');$('locationCards').innerHTML=l.map(x=>`<div class="location-card"><div class="location-icon">📍</div><div class="location-main"><h3>${esc(x.name)}</h3><p>${esc(x.address||'No address note')}</p><div class="location-stats"><span><b>${x.product_count}</b> products</span><span><b>${x.stock_units}</b> units</span></div></div><button class="mini-btn danger-txt" onclick="deleteLocation(${x.id})">Delete</button></div>`).join('')}
+function openLocationModal(){$('lname').value='';$('laddress').value='';$('locationModal').classList.remove('hidden')}
+async function saveLocation(){await api('/api/locations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('lname').value,address:$('laddress').value})});$('locationModal').classList.add('hidden');loadLocations()}
+async function deleteLocation(id){if(!confirm('Location delete karni hai?'))return;await api('/api/locations/'+id,{method:'DELETE'});loadLocations()}
+async function transferStock(){const data={product_id:$('transferProduct').value,from_location_id:$('transferFrom').value,to_location_id:$('transferTo').value,qty:$('transferQty').value};await api('/api/stock-transfer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});alert('Stock transfer complete.');loadLocations()}
+loadLocations();
+</script>
+{% endblock %}

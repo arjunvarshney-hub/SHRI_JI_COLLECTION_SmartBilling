@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head"><div><span class="eyebrow">SETTINGS</span><h2>Business & Data Settings</h2><p>Keep your billing system safe and easy to move to another device.</p></div></section>
+<section class="two-col"><div class="panel"><div class="panel-head"><h3>Business information</h3><span>Current values</span></div><div class="detail-box"><b>{{ store }}</b><span>{{ address }}</span><span>CONTACT: {{ contacts }}</span><span>Billing discount: 20%</span></div></div><div class="panel"><div class="panel-head"><h3>Backup & Restore</h3><span>Recommended regularly</span></div><div class="tip">Backup downloads locations, products, bills and stock movements into one JSON file.</div><div class="stack-actions"><button class="btn primary" onclick="location.href='/api/backup'">⬇ Backup Data</button><label class="btn light file-btn">⬆ Restore Data<input type="file" id="restoreFile" accept=".json,application/json" hidden></label></div></div></section>
+<section class="panel"><div class="panel-head"><h3>Current architecture</h3><span>Full-stack</span></div><ul class="clean-list"><li><b>Frontend:</b> HTML + CSS + JavaScript</li><li><b>Backend:</b> Python + Flask</li><li><b>Database:</b> SQLite</li><li><b>Data:</b> Bills, products, inventory, locations, stock transfers, customers and udhaar ledger are stored on the backend database.</li></ul></section>
+{% endblock %}
+{% block scripts %}
+<script>$('restoreFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;if(!confirm('Restore karne se current database replace ho jayega. Continue?'))return;const fd=new FormData();fd.append('file',f);const r=await fetch('/api/restore',{method:'POST',body:fd}).then(x=>x.json());alert(r.ok?'Data restore ho gaya.':(r.error||'Restore failed.'));e.target.value='';location.reload()});</script>
+{% endblock %}
